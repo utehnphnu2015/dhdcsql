@@ -6,4 +6,5 @@ where  p.discharge='9'   and p.nation ='099' and p.typearea in('1','3')
 group by dh.hoscode  order by areacode,hoscode asc;
 #test collaborator
 #again
+#ทดสอบ จาก utehn
 
