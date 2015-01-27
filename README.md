@@ -1,1 +1,2 @@
 # dhdcsql
+SQL ของระบบ DHDC
