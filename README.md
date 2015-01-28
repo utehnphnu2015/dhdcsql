@@ -1,2 +1,3 @@
-# dhdcsql
-SQL ของระบบ DHDC
+รายการตาราง lookup
+1,chospital,จากhdcกระทรวง
+2,cvillage,จากhdcกระทรวง
