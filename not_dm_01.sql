@@ -1,0 +1,2 @@
+
+select .............  copy จาก navicat
