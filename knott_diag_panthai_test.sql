@@ -21,5 +21,4 @@ where c.hospcode  = h.hoscode ) as uc_visit
 
 
 from chospital_amp h
-where h.provcode = '65' and hostype  in ('03','04','05','07','08','09','12','13')
-order by distcode,hoscode asc;
+order by hoscode asc;
