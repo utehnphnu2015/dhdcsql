@@ -11,7 +11,7 @@ join person as p on p.PID=c.PID and p.HOSPCODE=c.HOSPCODE
 and c.TYPEDISCH="03"
 GROUP BY p.CID) as p_target
 where p_target.HOSPCODE=h.hoscode
-GROUP BY p_target.HOSPCODE) as target,
+GROUP BY p_target.HOSPCODE) as chronic,
 (select count(distinct hhv.CID) as num from 
 (SELECT
 comserv.HOSPCODE,
@@ -26,6 +26,6 @@ community_service as comserv
 where p.PID=comserv.PID and p.HOSPCODE=comserv.HOSPCODE
 and comserv.DATE_SERV between @start and @end 
 and comserv.COMSERVICE like "1A%"
-group by p.CID) as hhv where hhv.HOSPCODE=h.hoscode) as commserv_num
+group by p.CID) as hhv where hhv.HOSPCODE=h.hoscode) as comm_serv
 from chospital h 
 where h.provcode='41' and h.distcode='06' and h.hostype in ('03','07')
