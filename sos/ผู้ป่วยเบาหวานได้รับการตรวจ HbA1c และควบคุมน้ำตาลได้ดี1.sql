@@ -33,6 +33,6 @@ where r.hospcode = h.hoscode
 where r.hospcode = h.hoscode
 ) as control
 
-from chospital h
-where h.provcode = '65' and hostype  in ('03','04','05','07','08','09','12','13')
+from chospital_amp h
+where  hostype  in ('03','04','05','07','08','09','12','13')
 order by distcode,hoscode asc;
