@@ -2,8 +2,15 @@
 SET @end_d:='20150930';
 
 SELECT distcode,pe.check_hosp HOSPCODE,pe.CID ,pe.name,pe.lname,pe.birth,if(t01.CID is not null,"ชั่งแล้ว","ไม่ได้ชั่ง") act,t01.m
-FROM
-t_person_cid pe LEFT JOIN
+FROM (
+SELECT SQL_BIG_RESULT 
+			p.*,age(DATE_FORMAT(CONCAT(@b_year,'0701'),'%Y%m%d'),birth,'y') as age_y
+		FROM
+			t_person_db p
+		WHERE LENGTH(TRIM(p.cid))=13 AND p.TYPEAREA in('1','3')
+		ORDER BY  p.D_UPDATE DESC ,p.TYPEAREA ASC
+
+) pe LEFT JOIN
 (
 SELECT p.cid,p.name,p.lname,DATE_FORMAT(n.DATE_SERV,'%m') m
 FROM (select pn.cid,nt.* from nutrition nt left join person pn on nt.HOSPCODE=pn.HOSPCODE and nt.pid=pn.pid) n
