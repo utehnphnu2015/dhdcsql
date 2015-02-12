@@ -9,7 +9,7 @@ SELECT p.cid,p.name,p.lname,DATE_FORMAT(n.DATE_SERV,'%m') m
 FROM (select pn.cid,nt.* from nutrition nt left join person pn on nt.HOSPCODE=pn.HOSPCODE and nt.pid=pn.pid) n
 INNER JOIN t_person_cid p ON n.CID=p.CID
 INNER JOIN ( SELECT cid,max(DATE_SERV) DATE_SERV
-FROM tmp_nutrition
+FROM (select * from nutrition) tmp_nutrition
 WHERE DATE_SERV BETWEEN @start_d AND @end_d
 GROUP BY HOSPCODE,PID
 ) n1 ON n.cid=n1.cid AND n.DATE_SERV=n1.DATE_SERV
