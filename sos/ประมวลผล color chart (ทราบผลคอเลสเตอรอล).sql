@@ -2,7 +2,7 @@ set @start='2014-10-01';
 set @end='2014-12-31';
 set @bdg_date = '2014-09-30';
 
-CREATE TABLE IF NOT EXISTS  `s_ncd_cholesteral_colorchart` (
+CREATE TABLE IF NOT EXISTS  `sys_ncd_cholesteral_colorchart` (
   `hospcode` varchar(5) NOT NULL DEFAULT '',
   `pid` varchar(15) NOT NULL DEFAULT '',
   `sex` char(1) DEFAULT NULL,
@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS  `s_ncd_cholesteral_colorchart` (
   PRIMARY KEY (`hospcode`,`pid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-DELETE FROM s_ncd_cholesteral_colorchart WHERE date_serv BETWEEN @start and @end;
+DELETE FROM sys_ncd_cholesteral_colorchart WHERE date_serv BETWEEN @start and @end;
 
-INSERT IGNORE INTO s_ncd_cholesteral_colorchart 
+INSERT IGNORE INTO sys_ncd_cholesteral_colorchart 
 (
   hospcode,pid,sex,smoke,chronic,labtest,labresult,date_serv,age,sbp,chart
 )

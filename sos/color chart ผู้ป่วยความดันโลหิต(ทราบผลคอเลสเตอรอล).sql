@@ -16,7 +16,7 @@ from chospital h
 LEFT JOIN
 (select n.hospcode,sum(if(n.chart = '<10%',1,0)) as l1 ,sum(if(n.chart = '10-<20%',1,0)) as l2 ,
                    sum(if(n.chart = '20-<30%',1,0)) as l3 ,sum(if(n.chart = '30-<40%',1,0)) as l4 ,sum(if(n.chart = '>=40%',1,0)) as l5
-                   from s_ncd_cholesteral_colorchart n
+                   from sys_ncd_cholesteral_colorchart n
                    where n.date_serv BETWEEN @start  and  @end
                    and  (n.chronic between 'I10' and 'I15') 
                    GROUP BY n.hospcode
