@@ -1,0 +1,8 @@
+SET @year_id=2014;
+SET @quarter_id=02;
+SET @hospcode=07711;
+SELECT hospcode,hospname,vaccinecode,vaccinename_en,xvalue,yvalue,format((yvalue/xvalue*100),2) as coverage
+FROM tmp_me_epi_kpi 
+INNER JOIN co_vaccine 
+ON topics=co_vaccine.vaccinetype
+WHERE year_id=@year_id AND quarter_id=@quarter_id AND hospcode=@hospcode;
