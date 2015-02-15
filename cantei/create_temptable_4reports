@@ -1,0 +1,931 @@
+/* ******************************************************************************************************************* */
+/* step 1  make temp table 4 any reports  */
+/* ******************************************************************************************************************* */
+DROP TABLE IF EXISTS `tmp_me_fullvaccine`;
+CREATE TABLE tmp_me_fullvaccine as 
+SELECT p.HOSPCODE,o.hosname,p.PID,p.CID,p.BIRTH,p.name AS FNAME,p.LNAME ,p.TYPEAREA
+,CONCAT(h.CHANGWAT,h.AMPUR,h.TAMBON,h.VILLAGE) as VILLAGEID
+,h.VILLAGE as MOO
+,v.villagename 
+,h.HID
+,h.HOUSE
+,MIN(IF(e.VACCINETYPE='010',e.date_serv, NULL)) AS 'BCG'
+,MIN(IF(e.VACCINETYPE='041', e.date_serv, NULL)) AS 'HB1'
+,MIN(IF(e.VACCINETYPE='061', e.date_serv, NULL)) AS 'MMR'
+,MIN(IF(e.VACCINETYPE='091', e.date_serv, NULL)) AS 'DHB1'
+,MIN(IF(e.VACCINETYPE='092', e.date_serv, NULL)) AS 'DHB2'
+,MIN(IF(e.VACCINETYPE='093', e.date_serv, NULL)) AS 'DHB3'
+,MIN(IF(e.VACCINETYPE='034', e.date_serv, NULL)) AS 'DTP4'
+,MIN(IF(e.VACCINETYPE='035', e.date_serv, NULL)) AS 'DTP5'
+,MIN(IF(e.VACCINETYPE='081', e.date_serv, NULL)) AS 'OPV1'
+,MIN(IF(e.VACCINETYPE='082', e.date_serv, NULL)) AS 'OPV2'
+,MIN(IF(e.VACCINETYPE='083', e.date_serv, NULL)) AS 'OPV3'
+,MIN(IF(e.VACCINETYPE='084', e.date_serv, NULL)) AS 'OPV4'
+,MIN(IF(e.VACCINETYPE='085', e.date_serv, NULL)) AS 'OPV5'
+,MIN(IF(e.VACCINETYPE='051', e.date_serv, NULL)) AS 'JE1'
+,MIN(IF(e.VACCINETYPE='052', e.date_serv, NULL)) AS 'JE2'
+,MIN(IF(e.VACCINETYPE='053', e.date_serv, NULL)) AS 'JE3'
+FROM person p
+LEFT JOIN epi e
+ON e.HOSPCODE=p.HOSPCODE AND e.PID=p.PID 
+LEFT JOIN home h 
+ON p.HOSPCODE=h.HOSPCODE AND p.HID=h.HID 
+INNER  JOIN chospital o
+ON e.HOSPCODE=o.hoscode
+LEFT JOIN ctambon t
+ON t.changwatcode=h.CHANGWAT AND t.ampurcode=h.AMPUR AND t.tamboncode=h.TAMBON
+LEFT JOIN cvillage v
+ON CONCAT(h.CHANGWAT,h.AMPUR,h.TAMBON,h.VILLAGE)=v.villagecodefull 
+WHERE p.TYPEAREA in ('1','3')   AND p.DISCHARGE in ('9','')
+AND p.BIRTH > '1990-09-30'
+GROUP BY p.HOSPCODE,p.PID;
+CREATE INDEX PIndex ON tmp_me_fullvaccine (HOSPCODE,PID);
+CREATE INDEX location_idx ON tmp_me_fullvaccine (VILLAGEID);
+
+/* ******************************************************************************************************************* */
+/* step 2 create temp table  & insert data for  coverage vaccine of quarterly    */
+/* ******************************************************************************************************************* */
+
+DROP TABLE IF EXISTS `tmp_me_epi_kpi`;
+CREATE TABLE tmp_me_epi_kpi 
+(
+year_id varchar(4), 
+quarter_id varchar(2), 
+month_id varchar (8), 
+kpi_id varchar(50), 
+topics varchar(50), 
+hospcode varchar(5),
+hospname varchar(50), 
+xvalue varchar(7),
+yvalue varchar(7),
+lastupdate date
+);
+
+-- end create table
+
+
+-- this report is contain 4 quarters of year
+# insert  
+SET @cyear='2014';
+
+/* ******************************************************************  quarter1  ************************************************************************** */
+
+-- -------------------------------------- grp1
+INSERT INTO tmp_me_epi_kpi 
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'010' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND BCG <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* MMR */
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'061' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND MMR <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* DHB3 */
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'093' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND DHB3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* OPV3 */
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'083' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-10-01')  AND concat(@cyear-2,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND OPV3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+-- -------------------------------------- grp2
+
+
+UNION 
+-- JE2
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'052' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-10-01')  AND concat(@cyear-3,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-10-01')  AND concat(@cyear-3,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND JE2 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- dtp4
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'034' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-10-01')  AND concat(@cyear-3,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-10-01')  AND concat(@cyear-3,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND DTP4 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+--  ------------------------------------------- grp3
+
+
+UNION 
+-- JE3
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'053' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-4,'-10-01')  AND concat(@cyear-4,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-4,'-10-01')  AND concat(@cyear-4,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND JE3 <= DATE_ADD(BIRTH,INTERVAL 3 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+--  -------------------------------------------- grp5
+
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'035' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-6,'-10-01')  AND concat(@cyear-6,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-6,'-10-01')  AND concat(@cyear-6,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND DTP5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'01' as quarter_id,'' as month_id,'epi' as kpi_id,'085' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-6,'-10-01')  AND concat(@cyear-6,'-12-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-6,'-10-01')  AND concat(@cyear-6,'-12-31') AND  t.HOSPCODE=h.hoscode
+
+AND OPV5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+/* ***************************************************************  quarter2  ******************************************************************************* */
+
+
+--  ---------------------------------------- grp1 
+UNION 
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'010' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND BCG <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+UNION 
+/* MMR */
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'061' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND MMR <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* DHB3 */
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'093' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND DHB3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* OPV3 */
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'083' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-01-01')  AND concat(@cyear-1,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND OPV3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+
+--  ----------------------------------------------- grp2
+
+UNION 
+-- JE2
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'052' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND JE2 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- dtp4
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'034' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND DTP4 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+--  ----------------------------------------------- grp3
+UNION 
+-- JE3
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'053' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-01-01')  AND concat(@cyear-3,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-01-01')  AND concat(@cyear-3,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND JE3 <= DATE_ADD(BIRTH,INTERVAL 3 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+--  ------------------------------------------------ grp5
+
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'035' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-01-01')  AND concat(@cyear-5,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-01-01')  AND concat(@cyear-5,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND DTP5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'02' as quarter_id,'' as month_id,'epi' as kpi_id,'085' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-01-01')  AND concat(@cyear-5,'-03-31') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-01-01')  AND concat(@cyear-5,'-03-31') AND  t.HOSPCODE=h.hoscode
+
+AND OPV5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+/* ****************************************************************  quarter3  **************************************************************************** */
+UNION 
+--  --------------------------------------------- grp1 
+
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'010' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND BCG <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* MMR */
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'061' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND MMR <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* DHB3 */
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'093' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND DHB3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* OPV3 */
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'083' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-04-01')  AND concat(@cyear-1,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND OPV3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+/*
+-- grp2
+*/
+
+UNION 
+-- JE2
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'052' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND JE2 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- dtp4
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'034' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND DTP4 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+--  --------------------------------------------------- grp3
+
+
+UNION 
+-- JE3
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'053' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-04-01')  AND concat(@cyear-3,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-04-01')  AND concat(@cyear-3,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND JE3 <= DATE_ADD(BIRTH,INTERVAL 3 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+/*
+-- grp5
+*/
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'035' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-04-01')  AND concat(@cyear-5,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-04-01')  AND concat(@cyear-5,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND DTP5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'03' as quarter_id,'' as month_id,'epi' as kpi_id,'085' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-04-01')  AND concat(@cyear-5,'-06-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-04-01')  AND concat(@cyear-5,'-06-30') AND  t.HOSPCODE=h.hoscode
+
+AND OPV5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()	
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+
+/* *******************************************************  quarter4  ************************************************************************************** */
+UNION 
+
+--  -------------------------------------------- grp1 
+ 
+
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'010' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND BCG <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+UNION 
+/* MMR */
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'061' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND MMR <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* DHB3 */
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'093' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND DHB3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+/* OPV3 */
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'083' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-1,'-07-01')  AND concat(@cyear-1,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND OPV3 <= DATE_ADD(BIRTH,INTERVAL 1 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+
+--  ----------------------------------------------- grp2
+
+
+UNION 
+-- JE2
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'052' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND JE2 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- dtp4
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'034' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-2,'-01-31')  AND concat(@cyear-2,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND DTP4 <= DATE_ADD(BIRTH,INTERVAL 2 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+
+--  ------------------------------------ grp3
+
+
+UNION 
+-- JE3
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'053' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-07-01')  AND concat(@cyear-3,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-3,'-07-01')  AND concat(@cyear-3,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND JE3 <= DATE_ADD(BIRTH,INTERVAL 3 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+/*
+--  --------------------------------------------------------------- grp5
+*/
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'035' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-07-01')  AND concat(@cyear-5,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-07-01')  AND concat(@cyear-5,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND DTP5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07')
+
+UNION 
+-- DTP5
+SELECT @cyear as year_id,'04' as quarter_id,'' as month_id,'epi' as kpi_id,'085' as topics,h.hoscode,h.hosname,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-07-01')  AND concat(@cyear-5,'-09-30') AND  t.HOSPCODE=h.hoscode
+) as target
+,
+(
+SELECT count(*) n
+FROM tmp_me_fullvaccine t
+WHERE t.BIRTH BETWEEN concat(@cyear-5,'-07-01')  AND concat(@cyear-5,'-09-30') AND  t.HOSPCODE=h.hoscode
+
+AND OPV5 <= DATE_ADD(BIRTH,INTERVAL 5 YEAR)
+) as getvacc
+,CURDATE()
+FROM chospital h
+WHERE h.provcode='67'
+AND h.distcode='01'
+AND h.hostype in ('03','06','07');
+
+-- # end  create table & insert data
+
+
+
+
+
+
