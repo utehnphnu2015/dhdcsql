@@ -1,0 +1,35 @@
+SET @startdate='2014-10-01';
+SET @enddate='2015-09-30';
+SELECT t.HOSPCODE,t.HNAME,t.subdistid,t.subdistname
+,sum(if(t.VACCINETYPE='010',1,0)) as BCG
+,sum(if(t.VACCINETYPE='041',1,0)) as HBV1                
+,sum(if(t.VACCINETYPE='091',1,0)) as DHB1
+,sum(if(t.VACCINETYPE='092',1,0)) as DHB2
+,sum(if(t.VACCINETYPE='093',1,0)) as DHB3
+,sum(if(t.VACCINETYPE='034',1,0)) as  DTP4
+,sum(if(t.VACCINETYPE='035',1,0)) as  DTP5
+,sum(if(t.VACCINETYPE='081',1,0)) as OPV1
+,sum(if(t.VACCINETYPE='082',1,0)) as OPV2
+,sum(if(t.VACCINETYPE='083',1,0)) as OPV3
+,sum(if(t.VACCINETYPE='084',1,0)) as OPV4
+,sum(if(t.VACCINETYPE='085',1,0)) as OPV5
+,sum(if(t.VACCINETYPE='061',1,0)) as MMR1
+,sum(if(t.VACCINETYPE='073',1,0)) as MMR2
+,sum(if(t.VACCINETYPE='051',1,0)) as  JE1
+,sum(if(t.VACCINETYPE='052',1,0)) as  JE2
+,sum(if(t.VACCINETYPE='053',1,0)) as  JE3
+,sum(if(t.VACCINETYPE='901',1,0)) as  dTC
+FROM (
+    SELECT p.HOSPCODE,h.hosname as HNAME,s.subdistid,s.subdistname,p.pid,p.cid,p.birth,p.typearea
+				,e.VACCINETYPE,e.DATE_SERV,e.VACCINEPLACE
+				FROM person p
+				LEFT JOIN  epi e
+				ON p.HOSPCODE=e.HOSPCODE AND p.pid=e.pid     
+				LEFT JOIN chospital h
+				ON p.HOSPCODE=h.hoscode
+				LEFT JOIN co_subdistrict s 
+				ON CONCAT(h.provcode,h.distcode,h.subdistcode)=s.subdistid
+				WHERE  	(e.DATE_SERV BETWEEN  @startdate AND @enddate)  AND e.HOSPCODE=e.VACCINEPLACE 
+    ) as t
+GROUP BY t.HOSPCODE
+ORDER BY t.subdistid,t.HOSPCODE;
