@@ -100,5 +100,5 @@ INSERT IGNORE INTO sys_ncd_nocholesteral_colorchart
          and (chronic.hospcode = person.hospcode and chronic.pid = person.pid) 
          and (bp.hospcode= chronic.hospcode and bp.pid = chronic.pid)
          and (bp.date_serv between @start and @end)
-         and  ((chronic.chronic between 'I10' and 'I15') or (chronic.chronic between 'E10' and 'E14'))
+         and  ((chronic.chronic between 'I10' and 'I159') or (chronic.chronic between 'E10' and 'E149'))
          and (timestampdiff(year,person.birth,bp.date_serv) >= 35  ) );
