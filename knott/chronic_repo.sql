@@ -10,16 +10,16 @@ Target Server Type    : MYSQL
 Target Server Version : 50541
 File Encoding         : 65001
 
-Date: 2015-02-23 20:58:56
+Date: 2015-02-24 15:17:05
 */
 
 SET FOREIGN_KEY_CHECKS=0;
 
 -- ----------------------------
--- Table structure for repo_chronic
+-- Table structure for chronic_repo
 -- ----------------------------
-DROP TABLE IF EXISTS `repo_chronic`;
-CREATE TABLE `repo_chronic` (
+DROP TABLE IF EXISTS `chronic_repo`;
+CREATE TABLE `chronic_repo` (
   `HOSPCODE` varchar(5) NOT NULL,
   `PID` varchar(15) NOT NULL,
   `DATE_DIAG` date NOT NULL COMMENT 'วันเดือนปีที่ตรวจพบครั้งแรก',

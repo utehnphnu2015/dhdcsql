@@ -10,16 +10,16 @@ Target Server Type    : MYSQL
 Target Server Version : 50541
 File Encoding         : 65001
 
-Date: 2015-02-23 20:59:09
+Date: 2015-02-24 15:15:54
 */
 
 SET FOREIGN_KEY_CHECKS=0;
 
 -- ----------------------------
--- Table structure for repo_person
+-- Table structure for person_repo
 -- ----------------------------
-DROP TABLE IF EXISTS `repo_person`;
-CREATE TABLE `repo_person` (
+DROP TABLE IF EXISTS `person_repo`;
+CREATE TABLE `person_repo` (
   `HOSPCODE` varchar(5) NOT NULL,
   `CID` varchar(13) DEFAULT NULL,
   `PID` varchar(15) NOT NULL,
