@@ -32,6 +32,8 @@ and d.SEQ = pd.SEQ
 and d.PID=pd.PID 
 and d.HOSPCODE = pd.HOSPCODE 
 and a.DATE_SERV between @start and @end 
+and p.NATION='099' and p.DISCHARGE='9' and p.TYPEAREA in ('1','3') 
 and p.HOSPCODE=h.hoscode) as output
 FROM
 chospital_amp AS h
+order by h.hoscode
